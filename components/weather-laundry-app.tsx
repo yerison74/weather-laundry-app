@@ -1,90 +1,98 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Search, MapPin, Loader2 } from "lucide-react"
-import WeatherForecast from "./weather-forecast"
-import LaundryRecommendation from "./laundry-recommendation"
-import { getWeatherForecast } from "@/lib/weather-service"
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useState, FormEvent, ChangeEvent } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search, MapPin, Loader2 } from "lucide-react";
+import WeatherForecast from "./weather-forecast";
+import LaundryRecommendation from "./laundry-recommendation";
+import { getWeatherForecast } from "@/lib/weather-service";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+type ForecastData = {
+  location: any;
+  date: any;
+  hourly: any;
+};
 
 export default function WeatherLaundryApp() {
-  const [location, setLocation] = useState("")
-  const [searchedLocation, setSearchedLocation] = useState("")
-  const [forecast, setForecast] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [geoLoading, setGeoLoading] = useState(false)
-  const [geoError, setGeoError] = useState("")
-  const [activeTab, setActiveTab] = useState("search")
+  const [location, setLocation] = useState("");
+  const [searchedLocation, setSearchedLocation] = useState("");
+  const [forecast, setForecast] = useState<ForecastData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState("");
+  const [activeTab, setActiveTab] = useState("search");
 
-  const handleSearch = async (e) => {
-    e?.preventDefault()
-    if (!location.trim()) return
+  const handleSearch = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!location.trim()) return;
 
-    setLoading(true)
-    setSearchedLocation(location)
-    setError("")
+    setLoading(true);
+    setSearchedLocation(location);
+    setError("");
 
     try {
-      const weatherData = await getWeatherForecast(location)
-      setForecast(weatherData)
+      const weatherData = await getWeatherForecast(location);
+      setForecast(weatherData);
     } catch (error) {
-      console.error("Error fetching weather data:", error)
-      setError("No se pudo obtener el pronóstico. Verifica la ubicación e intenta de nuevo.")
-      setForecast(null)
+      console.error("Error fetching weather data:", error);
+      setError("No se pudo obtener el pronóstico. Verifica la ubicación e intenta de nuevo.");
+      setForecast(null);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleGetCurrentLocation = async () => {
-    setGeoLoading(true)
-    setGeoError("")
+    setGeoLoading(true);
+    setGeoError("");
 
     if (!navigator.geolocation) {
-      setGeoError("La geolocalización no está soportada en tu navegador.")
-      setGeoLoading(false)
-      return
+      setGeoError("La geolocalización no está soportada en tu navegador.");
+      setGeoLoading(false);
+      return;
     }
 
     try {
-      const position = await new Promise((resolve, reject) => {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
           timeout: 10000,
           maximumAge: 0,
-        })
-      })
+        });
+      });
 
-      const { latitude, longitude } = position.coords
-      const locationQuery = `${latitude},${longitude}`
+      const { latitude, longitude } = position.coords;
+      const locationQuery = `${latitude},${longitude}`;
 
-      setLoading(true)
-      const weatherData = await getWeatherForecast(locationQuery)
-      setForecast(weatherData)
-      setSearchedLocation(weatherData.location)
-      setError("")
+      setLoading(true);
+      const weatherData = await getWeatherForecast(locationQuery);
+      setForecast(weatherData);
+      setSearchedLocation(weatherData.location);
+      setError("");
     } catch (error) {
-      console.error("Error getting location:", error)
+      console.error("Error getting location:", error);
 
-      if (error.code === 1) {
-        setGeoError("Permiso de ubicación denegado. Por favor, permite el acceso a tu ubicación.")
-      } else if (error.code === 2) {
-        setGeoError("No se pudo determinar tu ubicación. Verifica que el GPS esté activado.")
-      } else if (error.code === 3) {
-        setGeoError("Tiempo de espera agotado. Intenta de nuevo.")
+      const geoError = error as GeolocationPositionError;
+
+      if (geoError.code === 1) {
+        setGeoError("Permiso de ubicación denegado. Por favor, permite el acceso a tu ubicación.");
+      } else if (geoError.code === 2) {
+        setGeoError("No se pudo determinar tu ubicación. Verifica que el GPS esté activado.");
+      } else if (geoError.code === 3) {
+        setGeoError("Tiempo de espera agotado. Intenta de nuevo.");
       } else {
-        setGeoError("Error al obtener tu ubicación. Intenta de nuevo más tarde.")
+        setGeoError("Error al obtener tu ubicación. Intenta de nuevo más tarde.");
       }
     } finally {
-      setGeoLoading(false)
-      setLoading(false)
+      setGeoLoading(false);
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -101,7 +109,7 @@ export default function WeatherLaundryApp() {
                 <Input
                   placeholder="Ingresa tu ubicación"
                   value={location}
-                  onChange={(e) => setLocation(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setLocation(e.target.value)}
                   className="flex-1"
                 />
                 <Button type="submit" disabled={loading}>
@@ -148,5 +156,5 @@ export default function WeatherLaundryApp() {
         </>
       )}
     </div>
-  )
+  );
 }
