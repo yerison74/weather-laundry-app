@@ -1,7 +1,9 @@
 // Servicio de clima usando WeatherAPI
 export async function getWeatherForecast(location: string) {
   const apiKey = "04b57e808e6d44a1b29151928252604"
-  const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${encodeURIComponent(location)}&days=1&aqi=no&alerts=no`
+
+  // Añadir parámetros adicionales para obtener datos más precisos
+  const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${encodeURIComponent(location)}&days=1&aqi=no&alerts=yes&hour=24`
 
   try {
     const response = await fetch(url)
@@ -16,21 +18,25 @@ export async function getWeatherForecast(location: string) {
     const hourly = data.forecast.forecastday[0].hour.map((hourData: any) => {
       const date = new Date(hourData.time)
 
-      // Determinar la condición
+      // Determinar la condición con mayor precisión
       let condition = "sunny"
-      if (
-        hourData.condition.text.toLowerCase().includes("rain") ||
-        hourData.condition.text.toLowerCase().includes("drizzle") ||
-        hourData.condition.text.toLowerCase().includes("shower")
-      ) {
+      const conditionText = hourData.condition.text.toLowerCase()
+
+      if (conditionText.includes("rain") || conditionText.includes("drizzle") || conditionText.includes("shower")) {
         condition = "rain"
       } else if (
-        hourData.condition.text.toLowerCase().includes("cloud") ||
-        hourData.condition.text.toLowerCase().includes("overcast")
+        conditionText.includes("overcast") ||
+        (conditionText.includes("cloud") && !conditionText.includes("partly"))
       ) {
         condition = "cloudy"
-      } else if (hourData.condition.text.toLowerCase().includes("partly")) {
+      } else if (
+        conditionText.includes("partly") ||
+        conditionText.includes("scattered") ||
+        conditionText.includes("broken")
+      ) {
         condition = "partly-cloudy"
+      } else {
+        condition = "sunny"
       }
 
       return {
